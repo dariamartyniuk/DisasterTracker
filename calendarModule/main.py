@@ -9,6 +9,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
+        # logging.FileHandler(filename='calendar.log', mode='w'),
         logging.StreamHandler(stream=sys.stdout)
     ]
 )
@@ -27,13 +28,16 @@ def login():
         return "Login Failed", 500
 
 @app.route("/", methods=["GET"])
+# Returns the list of events from authorized user calendar
 def events():
     date_from = request.args.get('date_from')
     date_to = request.args.get('date_to')
 
+    # Validate input parameters - "YYYY-MM-DD"
     validate_date(date_from)
     validate_date(date_to)
 
+    # Login to calendar if necessary
     try:
         if not gc_client.creds or not gc_client.creds.valid:
             login()
@@ -42,12 +46,13 @@ def events():
         logging.info('Load events from calendar')
         events = get_events(service, date_from, date_to)
 
-        # Process events and return the response
+        # Process events via rabbitMQ
         channel = establish_rabbitmq_connection()
         setup_rabbitmq(channel, "calendar_events", "calendar_queue", "default")
-
+        # Create exchange if not exists
         channel.exchange_declare(exchange='calendar_events', exchange_type='topic', passive=True)
 
+        # return processed events
         return process_events(events, channel)
 
     except Exception as e:
