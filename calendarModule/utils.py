@@ -42,13 +42,22 @@ def establish_rabbitmq_connection():
                                                                    port=os.getenv("RABBITMQ_PORT")))
     return connection.channel()
 
-
+def setup_rabbitmq(channel, exchange, queue_name, routing_key):
+    # Declare an exchange (if it doesn't exist)
+    channel.exchange_declare(exchange=exchange, exchange_type='direct', durable=True)
+    # Declare a queue
+    channel.queue_declare(queue=queue_name, durable=True)
+    # Bind the queue to the exchange with a routing key
+    channel.queue_bind(exchange=exchange, queue=queue_name, routing_key=routing_key)
+    logging.info(f"Exchange '{exchange}' and queue '{queue_name}' are ready!")
 
 # Send message to rabbitMQ topic
 def publish_message_to_rabbitmq_topic(channel, exchange, routing_key, message):
     logging.info(f"Pushing event {message} to RabbitMQ topic")
-    channel.basic_publish(exchange=exchange, routing_key=routing_key, body=message,
-                          properties=pika.BasicProperties(delivery_mode=1))
+    channel.basic_publish(exchange=exchange,
+                          routing_key=routing_key,
+                          body=message,
+                          properties=pika.BasicProperties(delivery_mode=2))
 
 
 # Validate that date is formatted as YYYY-MM-DD

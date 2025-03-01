@@ -1,0 +1,7 @@
+Flask
+requests
+python-dotenv
+pika
+google-api-python-client
+google-auth-oauthlib
+rx
