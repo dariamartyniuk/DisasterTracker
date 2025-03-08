@@ -54,29 +54,20 @@ def form_message(event):
 # 5. Convert event to json, preserve encoding
 # 6. Publish event to RabbitMQ topic
 def process_events(events, channel):
-    processed_events = []
-
-    from_iterable(events['items']) \
+    return from_iterable(events['items']) \
         .pipe(
-            op.filter(lambda x: x.get('location') is not None),
-            op.do_action(lambda x: x.update({'coordinates': geocoding_api_connect(x['location'])})),
-            op.filter(lambda x: x.get('coordinates').get('status') == 'OK'),
-            op.map(lambda x: form_message(x)),
-            op.do_action(lambda x: processed_events.append(x)),  # Collect processed events
-            op.map(lambda x: json.dumps(x, ensure_ascii=False)),
-            op.do_action(lambda x: publish_message_to_rabbitmq_topic(
-                channel=channel,
-                exchange='calendar_events',
-                routing_key='default',
-                message=x
-            ))
-        ).subscribe(
-            on_next=lambda i: logging.info("Got - {0}".format(i)),
-            on_error=lambda e: logging.error("Error : {0}".format(e)),
-            on_completed=lambda: logging.info("Job Done!"),
-        )
-
-    return {
-        "status": "Success",
-        "events": processed_events
-    }, 200
+            op.filter(lambda x: x.get('location') is not None),  # Keep events with locations
+            op.map(lambda x: {**x, 'coordinates': geocoding_api_connect(x['location'])}),  # Add coordinates
+            op.filter(lambda x: x['coordinates'].get('status') == 'OK'),  # Filter valid geocoding responses
+            op.map(lambda x: form_message(x)),  # Simplify and reformat
+            op.do_action(  # Publish each event to RabbitMQ
+                lambda x: publish_message_to_rabbitmq_topic(
+                    channel=channel,
+                    exchange='calendar_events',
+                    routing_key='default',
+                    message=json.dumps(x, ensure_ascii=False)
+                )
+            ),
+            op.to_list()  # Collect all processed events into a list (final step)
+        ) \
+        .run()  # Execute the pipeline and return the result

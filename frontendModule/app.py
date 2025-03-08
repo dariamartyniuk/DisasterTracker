@@ -51,8 +51,7 @@ def calendar_form():
             logging.debug(f"Backend Response: {response.status_code} - {response.text}")
 
             if response.status_code == 200:
-                data = response.json()
-                events = data.get('events', [])  # Extract actual events
+                events = response.json()  # Directly parse the list of events
                 logging.debug(f"Parsed events: {events}")
                 return render_template('events.html', events=events)
 
