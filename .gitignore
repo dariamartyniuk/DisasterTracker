@@ -1,0 +1,9 @@
+# Ignore virtual environments
+venv/
+.env/
+
+# Ignore Python dependency files
+requirements.txt
+
+# Ignore idea files
+.idea/

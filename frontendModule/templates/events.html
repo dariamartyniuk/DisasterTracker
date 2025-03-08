@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Parsed Calendar Events</title>
+</head>
+<body>
+    <h1>Parsed Calendar Events</h1>
+
+    {% if events %}
+        <ul>
+            {% for event in events %}
+                <li>
+                    <strong>{{ event.summary }}</strong><br>
+                    Location: {{ event.location }}<br>
+                    Start: {{ event.start.dateTime }}<br>
+                    End: {{ event.end.dateTime }}
+                </li>
+                <hr>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No events found.</p>
+    {% endif %}
+
+    <a href="/calendar">Back</a>
+</body>
+</html>
