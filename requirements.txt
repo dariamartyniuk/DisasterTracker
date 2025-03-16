@@ -1,7 +1,11 @@
-Flask
+flask
 requests
-python-dotenv
-pika
-google-api-python-client
+google-auth
 google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+pika
+python-dotenv
 rx
+redis
+geopy

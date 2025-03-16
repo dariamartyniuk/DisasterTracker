@@ -8,7 +8,7 @@ To run:
 2) run python3 app.py 
 NOTE: you might need venv to run it locally. install needed stuff for venv using requirements.txt file:
 pip install -r requirements.txt
-3) Navigate to http://localhost:5002/
+3) Navigate to http://localhost:5005/
 
 If calendarModule is running on your local as well as rabbit mq instance, the system will work.
 

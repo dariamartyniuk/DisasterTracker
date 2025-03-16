@@ -6,11 +6,8 @@ services:
     container_name: rabbitmq
     restart: always
     ports:
-      - "5672:5672"  # RabbitMQ messaging port
-      - "15672:15672"  # Management UI
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      - "5672:5672"
+      - "15672:15672"
 
 
   calendar:

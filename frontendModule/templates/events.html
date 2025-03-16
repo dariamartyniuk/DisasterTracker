@@ -1,27 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Parsed Calendar Events</title>
+    <title>Calendar Events</title>
 </head>
 <body>
-    <h1>Parsed Calendar Events</h1>
-
-    {% if events %}
-        <ul>
-            {% for event in events %}
-                <li>
-                    <strong>{{ event.summary }}</strong><br>
-                    Location: {{ event.location }}<br>
-                    Start: {{ event.start.dateTime }}<br>
-                    End: {{ event.end.dateTime }}
-                </li>
-                <hr>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No events found.</p>
-    {% endif %}
-
-    <a href="/calendar">Back</a>
+    <h2>Calendar Events</h2>
+    <table border="1">
+        <tr>
+            <th>Event Name</th>
+            <th>Location</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Disaster Alert</th>
+        </tr>
+        {% for event in events.get('items', []) %}
+        <tr>
+            <td>{{ event.summary }}</td>
+            <td>{{ event.location }}</td>
+            <td>{{ event.start.dateTime }}</td>
+            <td>{{ event.end.dateTime }}</td>
+            <td>
+                {% if event.disaster_alert.alert %}
+                    ⚠️ Warning: Near {{ event.disaster_alert.disasters[0].title }} ({{ event.disaster_alert.distances_km[0] }} km away)
+                {% else %}
+                    ✅ Safe
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
 </body>
 </html>

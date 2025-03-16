@@ -1,59 +1,48 @@
+
 import logging
 import sys
+import requests
 from flask import Flask, redirect, request, jsonify
 
-from get_calendar_events import get_events, process_events
+from get_calendar_events import get_events
 from utils import GoogleCalendarClient, establish_rabbitmq_connection, setup_rabbitmq, validate_date
 
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        # logging.FileHandler(filename='calendar.log', mode='w'),
-        logging.StreamHandler(stream=sys.stdout)
-    ]
+    handlers=[logging.StreamHandler(stream=sys.stdout)]
 )
 
 app = Flask(__name__)
 gc_client = GoogleCalendarClient()
+
+MATCHING_API_URL = "http://localhost:5003/match_event"
 
 @app.route("/login")
 def login():
     try:
         logging.info("Redirecting user for Google Calendar authentication")
         gc_client.login_to_calendar()
-        return redirect("http://localhost:5002/callback")
+        return redirect("http://localhost:5005/callback")
     except Exception as error:
         logging.error(f"Login Error: {error}")
         return "Login Failed", 500
 
 @app.route("/", methods=["GET"])
-# Returns the list of events from authorized user calendar
 def events():
-    date_from = request.args.get('date_from')
-    date_to = request.args.get('date_to')
+    date_from = request.args.get('date_from', '').strip()
+    date_to = request.args.get('date_to', '').strip()
 
-    # Validate input parameters - "YYYY-MM-DD"
-    validate_date(date_from)
-    validate_date(date_to)
+    if not date_from or not date_to:
+        return jsonify({"status": "Error", "message": "Missing required parameters: date_from and date_to"}), 400
 
-    # Login to calendar if necessary
+    # Validate input parameters
     try:
-        if not gc_client.creds or not gc_client.creds.valid:
-            login()
-        service = gc_client.get_calendar_service()
+        validate_date(date_from)
+        validate_date(date_to)
+    except ValueError as e:
+        return jsonify({"status": "Error", "message": str(e)}), 400
 
-        logging.info('Load events from calendar')
-        events = get_events(service, date_from, date_to)
-
-        # Process events via rabbitMQ
-        channel = establish_rabbitmq_connection()
-        setup_rabbitmq(channel, "calendar_events", "calendar_queue", "default")
-        # Create exchange if not exists
-        channel.exchange_declare(exchange='calendar_events', exchange_type='topic', passive=True)
-
-        # return processed events
-        return process_events(events, channel)
 
     except Exception as e:
         logging.error(f"Service error: {e}")

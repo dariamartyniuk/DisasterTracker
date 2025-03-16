@@ -2,7 +2,7 @@ FROM python:3.12
 
 WORKDIR /app
 
-# add group and user to run a container
+# Add group and user to run a container securely
 RUN groupadd -r webservice && useradd --no-log-init -r -g webservice webservice
 
 COPY requirements.txt ./
@@ -12,6 +12,6 @@ COPY . .
 
 USER webservice:webservice
 
-EXPOSE 5001
+EXPOSE 5003
 
-CMD ["python", "main.py"]
+CMD ["python", "match_service.py"]

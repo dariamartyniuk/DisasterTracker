@@ -18,17 +18,17 @@ logging.basicConfig(
 )
 
 
-# Create connection to Google Calendar and Calendar Service object
+# Create connection to Google Calendar∂ and Calendar Service object
 class GoogleCalendarClient:
     def __init__(self):
-        self.SCOPES = ['https://www.googleapis.com/auth/calendar']
+        # Use a restricted scope to limit access
+        self.SCOPES = ['https://www.googleapis.com/auth/calendar.events.readonly']
         self.creds = None
 
-    # Login to calendar
     def login_to_calendar(self):
-        """Handles user authentication and saves credentials."""
         flow = InstalledAppFlow.from_client_secrets_file('credentials.json', self.SCOPES)
-        self.creds = flow.run_local_server(port=8090)
+        self.creds = flow.run_local_server(port=0, open_browser=False)
+
 
     # Create calendar service object
     def get_calendar_service(self):
@@ -62,7 +62,11 @@ def publish_message_to_rabbitmq_topic(channel, exchange, routing_key, message):
 
 # Validate that date is formatted as YYYY-MM-DD
 def validate_date(date_text):
+    if not date_text or not isinstance(date_text, str):
+        raise ValueError("Invalid date format. Expected a string in YYYY-MM-DD format.")
+
     try:
         date.fromisoformat(date_text)
     except ValueError:
-        return ValueError("Incorrect data format, should be YYYY-MM-DD"), 400
+        raise ValueError("Incorrect date format, should be YYYY-MM-DD")
+
