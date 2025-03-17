@@ -1,10 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Calendar Authorization</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Calendar Authorization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            max-width: 400px;
+            margin: auto;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            background-color: #ff5e62;
+            color: white;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #ff3c41;
+        }
+    </style>
 </head>
 <body>
-    <h1>Google Calendar Integration</h1>
-    <a href="/authorize"><button>Authorize with Google</button></a>
+
+    <div class="container">
+        <h1>Google Calendar Integration</h1>
+        <a href="/authorize" class="btn">Authorize with Google</a>
+    </div>
+
 </body>
 </html>
