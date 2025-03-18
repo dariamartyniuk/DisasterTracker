@@ -1,14 +1,13 @@
-import json
-import logging
 from collections import Counter
 
-import requests
 from geopy.distance import geodesic
 from redis import Redis
 from mappingModule.geo_utils import get_coordinates_from_location
+import requests
+import logging
+import json
 
-# Connect to Redis
-REDIS_HOST = "localhost"  # Change this based on your setup
+REDIS_HOST = "localhost"
 redis_client = Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
 
 def get_stored_disasters():
@@ -41,19 +40,49 @@ def build_disaster(event):
     return None
 
 def fetch_disaster_events():
-    """Fetch and process disaster events."""
+    """Fetch disaster events from EONET API and store in Redis."""
+
     url = "https://eonet.gsfc.nasa.gov/api/v3/events"
-    response = requests.get(url)
 
-    if response.status_code == 200:
-        events = response.json().get('events', [])
-        disaster_list = list(filter(None, map(build_disaster, events)))
+    try:
+        logging.info(f"Fetching disasters from: {url} ")
+        response = requests.get(url, timeout=1000)
+        response.raise_for_status()
 
-        store_disasters(disaster_list)
+        raw_data = response.json()
+        events = raw_data.get('events', [])
+
+        if not events:
+            logging.warning("No disaster events found in API response.")
+            return []
+
+        logging.info(f"Found {len(events)} disaster events.")
+
+        disaster_list = [
+            {
+                "id": event['id'],
+                "title": event['title'],
+                "coordinates": geo['coordinates'],  # [longitude, latitude]
+                "category": event['categories'][0]['title'],
+                "date": geo['date']
+            }
+            for event in events if event.get('geometry')
+            for geo in event['geometry']
+        ]
+
+        redis_client.set("disaster_events", json.dumps(disaster_list), ex=3600)
+        logging.info(f"Stored {len(disaster_list)} disasters in Redis.")
+
         return disaster_list
-    else:
-        print(f"Failed to fetch disaster events: {response.status_code}")
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"API Request Failed: {e}")
         return []
+
+    except Exception as e:
+        logging.error(f"Unexpected Error: {e}", exc_info=True)
+        return []
+
 
 def get_hotspots(threshold=3):
     """Identifies high-risk locations based on disaster event frequency."""
@@ -91,7 +120,7 @@ def match_event_to_disasters(user_event):
         lambda disaster: geodesic(
             (event_coordinates[0], event_coordinates[1]),
             (disaster["coordinates"][1], disaster["coordinates"][0])
-        ).km < 50000,
+        ).km < 500,
         disasters
     ))
 

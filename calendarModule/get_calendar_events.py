@@ -1,26 +1,30 @@
-import json
-import logging
-import os
-import os.path
 import sys
+import time
 from datetime import datetime, timezone
-
 import requests
-from dotenv import load_dotenv
 
 from calendarModule.utils import publish_message_to_rabbitmq_topic
+import json
+import logging
+from rx import from_iterable, operators as op
 
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        # logging.FileHandler(filename='calendar.log', mode='w'),
         logging.StreamHandler(stream=sys.stdout)
     ]
 )
 
+# Events processing pipe
+# 1. Events without location cannot be matched with geo data, filter it out
+# 2. Match events with location to geo data
+# 3. Filter out events with location unknown to Geocoding
+# 4. Filter out unnecessary fields
+# 5. Convert event to json, preserve encoding
+# 6. Publish event to RabbitMQ topic
 
-# Retrieve events using the Google Calendar API.
+
 def get_events(service, date_from, date_to, calendar_id='primary'):
     if service is None:
         logging.error("Google Calendar service is None. Cannot fetch events")
@@ -43,7 +47,6 @@ def get_events(service, date_from, date_to, calendar_id='primary'):
             logging.error("Unexpected response format. Expected a dictionary but received something else")
             return {}
 
-        # Ensure 'items' exists and is a list
         items = events_response.get('items', [])
         if not isinstance(items, list):
             logging.error("The items field is not a list. Possible API structure change")
@@ -57,47 +60,45 @@ def get_events(service, date_from, date_to, calendar_id='primary'):
                 logging.error(f"Unexpected event format: {event}")
                 continue
 
-        return events_response  # ✅ FIX: Return the full dictionary instead of just `items`
+        return events_response
 
     except Exception as e:
         logging.error(f"Google Calendar API request failed: {e}", exc_info=True)
         return {}
 
+def geocoding_api_connect(location, base_url="https://nominatim.openstreetmap.org/search"):
+    """Geocode location safely with error handling and rate limits."""
 
+    if not location or not location.strip():
+        logging.warning("Skipping empty location.")
+        return {"status": "ERROR", "message": "Empty location"}
 
+    params = {
+        "q": location,
+        "format": "json",
+        "limit": 1
+    }
 
+    try:
+        time.sleep(1)  # Prevent rate-limiting issues
+        response = requests.get(base_url, params=params, timeout=5)
+        response.raise_for_status()
 
+        data = response.json()
 
+        if not data:
+            logging.warning(f"Could not geocode location: '{location}' (No results)")
+            return {"status": "ERROR", "message": "Location not found"}
 
-# Connect to Geocoding API, send location and get geo data
-def geocoding_api_connect(location: str, base_url="https://maps.googleapis.com/maps/api/geocode/json"):
-    load_dotenv()
-    return requests.get(base_url, params={"address": location, "key": os.getenv('GEOCODING_API_KEY')}).json()
+        return {"status": "OK", "coordinates": [data[0]["lat"], data[0]["lon"]]}
 
+    except requests.exceptions.Timeout:
+        logging.error(f"Geocoding timeout for: {location}")
+        return {"status": "ERROR", "message": "Geocoding timeout"}
 
-# Filter message fields, leave only necessary
-import logging
-
-
-
-
-
-
-# Events processing pipe
-# 1. Events without location cannot be matched with geo data, filter it out
-# 2. Match events with location to geo data
-# 3. Filter out events with location unknown to Geocoding
-# 4. Filter out unnecessary fields
-# 5. Convert event to json, preserve encoding
-# 6. Publish event to RabbitMQ topic
-import json
-import logging
-from rx import from_iterable, operators as op
-
-import logging
-import json
-from rx import from_iterable
-import rx.operators as op
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Geocoding request failed for {location}: {e}")
+        return {"status": "ERROR", "message": str(e)}
 
 def process_events(events, channel):
     try:
@@ -182,7 +183,7 @@ def form_message(event):
         }
     except Exception as e:
         logging.error(f"Error processing event: {event}. Exception: {e}")
-        return None  # Skip problematic event
+        return None
 
 
 
