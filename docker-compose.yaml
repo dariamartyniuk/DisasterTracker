@@ -17,7 +17,7 @@ services:
     depends_on:
       - rabbitmq  # Ensures RabbitMQ starts first
     ports:
-      - "5000:5000"
+      - "5001:5001"
       - "8090:8090"
     environment:
       RABBITMQ_HOST: rabbitmq
