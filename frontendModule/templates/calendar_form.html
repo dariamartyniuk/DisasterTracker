@@ -1,70 +1,92 @@
-<form method="POST" action="/calendar">
-    <style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Calendar Events</title>
+  <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f7fc;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    form {
-      background-color: #fff;
       padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      width: 100%;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    form {
       max-width: 400px;
+      margin: auto;
+      padding: 10px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
     label {
-      font-size: 14px;
-      font-weight: bold;
-      margin-bottom: 8px;
       display: block;
+      margin-top: 10px;
+      font-weight: bold;
     }
-
     input[type="date"] {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 14px;
+      padding: 8px;
+      margin-top: 5px;
     }
-
-    input[type="date"]:focus {
-      border-color: #4e73df;
-      outline: none;
-    }
-
     button {
-      background-color: #4e73df;
-      color: white;
-      padding: 10px 20px;
+      margin-top: 15px;
+      width: 100%;
+      padding: 10px;
+      background: #4e73df;
+      color: #fff;
       border: none;
       border-radius: 4px;
-      font-size: 14px;
       cursor: pointer;
-      width: 100%;
     }
-
-    button:hover {
-      background-color: #2e59d9;
+    .event {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 4px;
+      background: #fff;
     }
-
-    button:active {
-      background-color: #1e44c2;
+    .alert {
+      color: red;
+      font-weight: bold;
+    }
+    .safe {
+      color: green;
     }
   </style>
-
-  <label for="date_from">From Date:</label>
-  <input type="date" id="date_from" name="date_from" required>
-
-  <label for="date_to">To Date:</label>
-  <input type="date" id="date_to" name="date_to" required>
-
-  <button type="submit">Submit</button>
-</form>
+</head>
+<body>
+  <h1>Calendar Events</h1>
+  <form method="POST" action="/calendar">
+    <label for="date_from">From Date:</label>
+    <input type="date" id="date_from" name="date_from" required>
+    <label for="date_to">To Date:</label>
+    <input type="date" id="date_to" name="date_to" required>
+    <button type="submit">Get Events</button>
+  </form>
+  <hr>
+  {% if events %}
+    {% for event in events %}
+      <div class="event">
+        <h3>{{ event.summary }}</h3>
+        <p><strong>Location:</strong> {{ event.location }}</p>
+        <p><strong>Start:</strong> {{ event.start.date }} | <strong>End:</strong> {{ event.end.date }}</p>
+        {% if event.disaster_alert %}
+          <p class="alert">⚠️ Disaster Alert!</p>
+          {% if event.matched_disasters %}
+            <ul>
+              {% for dis in event.matched_disasters %}
+                <li>{{ dis.title }} ({{ dis.category }})</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% else %}
+          <p class="safe">✅ No disasters matched.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+</body>
+</html>

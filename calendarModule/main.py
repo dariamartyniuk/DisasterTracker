@@ -6,7 +6,7 @@ from flask import Flask, redirect, request, jsonify
 from flask.cli import load_dotenv
 
 from get_calendar_events import get_events
-from mappingModule.event_matcher import get_hotspots, match_event_to_disasters, redis_client
+from mappingModule.event_matcher import match_event_to_disasters, redis_client
 from google.oauth2.credentials import Credentials
 from get_calendar_events import get_events, process_events
 from utils import GoogleCalendarClient, establish_rabbitmq_connection, setup_rabbitmq, validate_date
@@ -66,7 +66,7 @@ def callback():
         return jsonify({"error": "Login Failed"}), 400
 
     gc_client.creds = Credentials(token_data.get('access_token'))
-    return redirect("http://localhost:5002/callback")
+    return redirect("http://localhost:5005/callback")
 
 
 @app.route("/", methods=["GET"])
@@ -118,15 +118,6 @@ def events():
 
     except Exception as e:
         logging.error(f"Service error: {e}", exc_info=True)
-        return jsonify({"status": "Error", "message": "Internal Server Error"}), 500
-
-@app.route("/hotspots", methods=["GET"])
-def hotspots():
-    try:
-        hotspot_data = get_hotspots()
-        return jsonify({"status": "Success", "hotspots": hotspot_data})
-    except Exception as e:
-        logging.error(f"Error fetching hotspots: {e}", exc_info=True)
         return jsonify({"status": "Error", "message": "Internal Server Error"}), 500
 
 if __name__ == "__main__":

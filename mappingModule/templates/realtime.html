@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Real-Time Disaster Updates</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js" integrity="sha384-Xb4YjO71+ib6cWyQlPStHMWx3dP4IF5x6WdAvuoA1z/7S1ZZWD4K/t0pE1y3wI2Q" crossorigin="anonymous"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f7fc;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    #updates {
+      margin-top: 20px;
+    }
+    .update {
+      background-color: #fff;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Real-Time Disaster Updates</h1>
+  <div id="updates">
+    <!-- Оновлення від Socket.IO будуть додаватися сюди -->
+  </div>
+  <script type="text/javascript">
+    var socket = io();
+
+    socket.on("connect", function() {
+      console.log("Connected to Socket.IO server");
+    });
+
+    socket.on("update", function(data) {
+      console.log("Received update:", data);
+      var updatesDiv = document.getElementById("updates");
+      var updateDiv = document.createElement("div");
+      updateDiv.className = "update";
+      updateDiv.innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+      updatesDiv.prepend(updateDiv);
+    });
+  </script>
+</body>
+</html>
+</title>
+</head>
+<body>
+
+</body>
+</html>
