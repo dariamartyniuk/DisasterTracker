@@ -1,4 +1,3 @@
-# mappingModule/geo_utils.py
 import logging
 from geopy.geocoders import Nominatim
 

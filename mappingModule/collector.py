@@ -1,67 +1,48 @@
-# collector.py
 import logging
 import requests
+import pika
+import json
 import schedule
 import time
-import redis
-import json
-import pika
 
 logging.basicConfig(level=logging.INFO)
-
-r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
-
+RABBITMQ_HOST = "localhost"
 EONET_URL = "https://eonet.gsfc.nasa.gov/api/v3/events"
 
-def publish_update(data):
-    """
-    Публікує дані у RabbitMQ на exchange "disaster_updates" з routing key "update".
-    """
+def publish_raw_events(data):
     try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
         channel = connection.channel()
-        channel.exchange_declare(exchange="disaster_updates", exchange_type="topic", durable=True)
+        channel.exchange_declare(exchange="raw_updates", exchange_type="topic", durable=True)
         message = json.dumps(data, ensure_ascii=False)
         channel.basic_publish(
-            exchange="disaster_updates",
-            routing_key="update",
+            exchange="raw_updates",
+            routing_key="raw",
             body=message,
             properties=pika.BasicProperties(delivery_mode=2)
         )
-        logging.info("Published update to RabbitMQ.")
+        logging.info("Published raw events to RabbitMQ")
         connection.close()
     except Exception as e:
-        logging.error("Failed to publish update: %s", e)
+        logging.error("Error publishing raw events: %s", e)
 
-def fetch_eonet_events():
-    """
-    Завантажує події з EONET API, зберігає їх у Redis і публікує оновлення в RabbitMQ.
-    """
+def fetch_and_publish():
     try:
-        logging.info("Fetching EONET disasters...")
+        logging.info("Fetching EONET events...")
         response = requests.get(EONET_URL, timeout=30)
         response.raise_for_status()
         data = response.json()
         events = data.get("events", [])
-        logging.info(f"Fetched {len(events)} EONET events.")
-
-        r.set("disaster_events", json.dumps(events))
-        logging.info("EONET events stored in Redis.")
-
+        logging.info(f"Fetched {len(events)} events from EONET")
         if events:
-            update_data = {"source": "EONET", "events": events}
-            publish_update(update_data)
+            publish_raw_events({"source": "EONET", "events": events})
     except Exception as e:
-        logging.error("Failed to fetch EONET events: %s", e)
-
-def poll_disasters():
-    fetch_eonet_events()
+        logging.error("Error fetching EONET events: %s", e)
 
 if __name__ == "__main__":
-    schedule.every(1).minutes.do(poll_disasters)
-    logging.info("Starting disaster collector service...")
-    poll_disasters()
-
+    schedule.every(5).minutes.do(fetch_and_publish)
+    logging.info("Starting collector service...")
+    fetch_and_publish()
     while True:
         schedule.run_pending()
         time.sleep(1)
