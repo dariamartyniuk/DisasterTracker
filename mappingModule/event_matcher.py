@@ -120,7 +120,7 @@ def match_event_to_disasters(user_event):
         lambda disaster: geodesic(
             (event_coordinates[0], event_coordinates[1]),
             (disaster["coordinates"][1], disaster["coordinates"][0])
-        ).km < 500,
+        ).km < 500000,
         disasters
     ))
 

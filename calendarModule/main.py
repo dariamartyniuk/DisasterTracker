@@ -1,7 +1,9 @@
 import logging
+import os
 import sys
 import requests
 from flask import Flask, redirect, request, jsonify
+from flask.cli import load_dotenv
 
 from get_calendar_events import get_events
 from mappingModule.event_matcher import get_hotspots, match_event_to_disasters, redis_client
