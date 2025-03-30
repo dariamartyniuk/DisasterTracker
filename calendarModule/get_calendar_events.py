@@ -56,19 +56,25 @@ def form_message(event):
 def process_events(events, channel):
     return from_iterable(events['items']) \
         .pipe(
+            # Filter events with valid locations
             op.filter(lambda x: x.get('location') is not None),
+            # Add coordinates using the geocoding API
             op.map(lambda x: {**x, 'coordinates': geocoding_api_connect(x['location'])}),
+            # Filter events with valid geocoding results
             op.filter(lambda x: x['coordinates'].get('status') == 'OK'),
+            # Convert events to message format
             op.map(lambda x: form_message(x)),
-            op.do_action(
-                lambda x: publish_message_to_rabbitmq_topic(
-                    channel=channel,
-                    exchange='calendar_events',
-                    routing_key='default',
-                    message=json.dumps(x, ensure_ascii=False)
-                )
-            ),
-            # Collect all processed events into a list (final step)
+            # Collect all processed events into a batch (list)
+            op.to_list(),
+            # Publish the batch of events to RabbitMQ as a single message
+            op.do_action(lambda batch: logging.info(f"Publishing batch of events to RabbitMQ: {batch}")),  # Added logging
+            op.do_action(lambda batch: publish_message_to_rabbitmq_topic(
+                channel=channel,
+                exchange='calendar_events',
+                routing_key='default',
+                message=json.dumps(batch, ensure_ascii=False)
+            )),
+            # Return the batch for debugging/testing
             op.to_list()
         ) \
         .run()
