@@ -60,15 +60,16 @@ def process_events(events, channel):
             op.map(lambda x: {**x, 'coordinates': geocoding_api_connect(x['location'])}),
             op.filter(lambda x: x['coordinates'].get('status') == 'OK'),
             op.map(lambda x: form_message(x)),
-            op.do_action(
-                lambda x: publish_message_to_rabbitmq_topic(
-                    channel=channel,
-                    exchange='calendar_events',
-                    routing_key='default',
-                    message=json.dumps(x, ensure_ascii=False)
-                )
-            ),
-            # Collect all processed events into a list (final step)
+            # Collect all processed events into a batch (list)
+            op.to_list(),
+            # Publish the batch of events to RabbitMQ as a single message
+            op.do_action(lambda batch: logging.info(f"Publishing batch of events to RabbitMQ: {batch}")),
+            op.do_action(lambda batch: publish_message_to_rabbitmq_topic(
+                channel=channel,
+                exchange='calendar_events',
+                routing_key='default',
+                message=json.dumps(batch, ensure_ascii=False)
+            )),
             op.to_list()
         ) \
         .run()
