@@ -13,6 +13,7 @@ logging.basicConfig(
 
 app = Flask(__name__, template_folder='templates')
 
+MAPPING_API_URL = "http://localhost:5003/processed-events"
 API_BASE_URL = "http://localhost:5001"
 
 @app.route('/')
@@ -43,25 +44,31 @@ def calendar_form():
         date_from = request.form.get('date_from')
         date_to = request.form.get('date_to')
 
-        try:
-            if not date_from or not date_to:
-                return "Missing date range", 400
+        if not date_from or not date_to:
+            return "Missing date range", 400
 
-            response = requests.get(f"{API_BASE_URL}/", params={"date_from": date_from, "date_to": date_to})
-            logging.debug(f"Backend Response: {response.status_code} - {response.text}")
+        try:
+            params = {"date_from": date_from, "date_to": date_to}
+            response = requests.get(MAPPING_API_URL, params=params)
+            logging.debug(f"Mapping Module Response: {response.status_code} - {response.text}")
 
             if response.status_code == 200:
                 events = response.json()  # Directly parse the list of events
                 logging.debug(f"Parsed events: {events}")
                 return render_template('events.html', events=events)
-
-            return f"Error fetching events: {response.text}", response.status_code
+            else:
+                return f"Error fetching events: {response.text}", response.status_code
 
         except Exception as error:
             logging.error(f"Submission Error: {error}")
             return "Submission Failed", 500
 
     return render_template('calendar_form.html')
+
+@app.route('/hotspots')
+def hotspots():
+    hotspots_data = []
+    return render_template('hotspots.html', hotspots=hotspots_data)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=True)

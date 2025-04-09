@@ -1,5 +1,7 @@
 import json
 import logging
+
+import redis
 import requests
 import math
 from datetime import datetime, timedelta
@@ -89,25 +91,25 @@ def haversine(lat1, lon1, lat2, lon2):
 # Main pipe to match disasters
 def process_events(events, date_from, date_to):
     logging.info(f"Processing {len(events)} events.")
-    # Fetch disasters once for all events
     disasters = fetch_disasters_bulk(date_from, date_to)
     return from_iterable(events) \
         .pipe(
-            op.map(lambda event: {
-                **event,
-                "matched_disasters": filter_disasters_for_event(event, disasters)
-            }),
+            op.map(lambda event: {**event, "matched_disasters": filter_disasters_for_event(event, disasters)}),
+            # Only return events that have at least one matched disaster
             op.filter(lambda event: len(event["matched_disasters"]) > 0),
-            op.map(lambda event: {
-                "id": event["id"],
-                "location": event["location"],
-                "summary": event["summary"],
-                "matched_disasters": event["matched_disasters"]
-            }),
             op.to_list()
         ).run()
 
-# RabbitMQ consumer logic + events matching and processing
+def store_matched_events_in_redis(matched_results):
+    try:
+        r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+        r.delete("matched_events")
+        for event in matched_results:
+            r.rpush("matched_events", json.dumps(event))
+        logging.info(f"Stored {matched_results} matched events in Redis.")
+    except Exception as ex:
+        logging.error(f"Error storing matched events in Redis: {ex}")
+
 def consume_and_match_events():
     channel = establish_rabbitmq_connection()
     setup_rabbitmq(channel, exchange="calendar_events", queue_name="calendar_queue", routing_key="default")
@@ -116,24 +118,16 @@ def consume_and_match_events():
         try:
             raw_data = json.loads(body.decode("utf-8"))
             logging.info(f"Raw message received: {raw_data}")
-
-            # Normalize single or batch events into a list
-            if isinstance(raw_data, list):
-                events = raw_data
-            elif isinstance(raw_data, dict):
-                events = [raw_data]
-            else:
-                raise ValueError(f"Unexpected data type: {type(raw_data)}")
-
+            events = raw_data if isinstance(raw_data, list) else [raw_data]
             logging.info(f"Normalized events list: {events}")
 
-            # Calculate query date range
             date_from, date_to = calculate_date_range(events)
             logging.info(f"Calculated disaster query date range: {date_from} to {date_to}")
 
-            # Match disasters
             matched_results = process_events(events, date_from, date_to)
             logging.info(f"Matched disaster results: {matched_results}")
+
+            store_matched_events_in_redis(matched_results)
 
         except Exception as e:
             logging.error(f"Error processing RabbitMQ message: {e}")

@@ -69,7 +69,6 @@ def process_events(events, channel):
                 exchange='calendar_events',
                 routing_key='default',
                 message=json.dumps(batch, ensure_ascii=False)
-            )),
-            op.to_list()
+            ))
         ) \
         .run()
