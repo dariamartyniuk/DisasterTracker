@@ -1,5 +1,3 @@
-# uiModule/app.py
-
 import logging
 import sys
 import requests
@@ -13,8 +11,10 @@ logging.basicConfig(
 
 app = Flask(__name__, template_folder='templates')
 
-MAPPING_API_URL = "http://localhost:5003/processed-events"
+# Base URL for the calendar module, which updates and returns updated events.
 API_BASE_URL = "http://localhost:5001"
+# URL of the mapping module, which returns the matched events from Redis.
+MAPPING_API_URL = "http://localhost:5003/processed-events"
 
 @app.route('/')
 def index():
@@ -23,7 +23,7 @@ def index():
 @app.route('/authorize')
 def authorize():
     try:
-        # Redirect to the backend's Google Calendar authorization
+        # Redirect to the calendar module's Google Calendar authorization if needed.
         return redirect(f"{API_BASE_URL}/login")
     except Exception as error:
         logging.error(f"Authorization Error: {error}")
@@ -32,7 +32,7 @@ def authorize():
 @app.route('/callback')
 def callback():
     try:
-        # After successful authorization, redirect to the form page
+        # After successful authorization, redirect to the form page.
         return redirect(url_for('calendar_form'))
     except Exception as error:
         logging.error(f"Callback Error: {error}")
@@ -49,15 +49,30 @@ def calendar_form():
 
         try:
             params = {"date_from": date_from, "date_to": date_to}
-            response = requests.get(MAPPING_API_URL, params=params)
-            logging.debug(f"Mapping Module Response: {response.status_code} - {response.text}")
+
+            # First, call the calendar module (API_BASE_URL)
+            # This endpoint should update or fetch the latest calendar events.
+            response = requests.get(API_BASE_URL, params=params)
+            events = response.json()['processed_events']
+            logging.info(events)
+            logging.debug(f"Calendar Module Response: {response.status_code} - {response.text}")
+
+
 
             if response.status_code == 200:
-                events = response.json()  # Directly parse the list of events
-                logging.debug(f"Parsed events: {events}")
+                # Next, query the mapping module for matched events that were saved in Redis.
+                map_response = requests.get(MAPPING_API_URL, params=params)
+                # logging.debug(f"Mapping Module Response: {map_response.status_code} - {map_response.text}")
+                #
+                # if map_response.status_code == 200:
+                #     events = map_response.json()  # List of processed matched events.
+                #     logging.debug(f"Parsed events: {events}")
                 return render_template('events.html', events=events)
+                # else:
+                #     return f"Error fetching matched events: {map_response.text}", map_response.status_code
+
             else:
-                return f"Error fetching events: {response.text}", response.status_code
+                return f"Error updating calendar events: {events.text}", events.status_code
 
         except Exception as error:
             logging.error(f"Submission Error: {error}")
@@ -67,7 +82,7 @@ def calendar_form():
 
 @app.route('/hotspots')
 def hotspots():
-    hotspots_data = []
+    hotspots_data = []  # Add your hotspots data here if needed.
     return render_template('hotspots.html', hotspots=hotspots_data)
 
 if __name__ == '__main__':

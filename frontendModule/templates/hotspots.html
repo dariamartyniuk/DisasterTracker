@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Hotspots - Disaster Tracker{% endblock %}
+
+{% block content %}
+    <h1>Hotspots Statistics</h1>
+    {% if hotspots and hotspots|length > 0 %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; padding: 12px; border-bottom: 1px solid #e0e0e0; background-color: #f2f2f2;">Location</th>
+                    <th style="text-align: left; padding: 12px; border-bottom: 1px solid #e0e0e0; background-color: #f2f2f2;">Event Count</th>
+                    <th style="text-align: left; padding: 12px; border-bottom: 1px solid #e0e0e0; background-color: #f2f2f2;">Warning</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for location, count in hotspots %}
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">{{ location }}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">{{ count }}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; color: #d9534f; font-weight: bold;">This place might be unsafe!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="text-align: center; font-size: 16px; color: #555;">No hotspots found.</p>
+    {% endif %}
+{% endblock %}
