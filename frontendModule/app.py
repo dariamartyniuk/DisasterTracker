@@ -50,30 +50,27 @@ def calendar_form():
         try:
             params = {"date_from": date_from, "date_to": date_to}
 
-            # First, call the calendar module (API_BASE_URL)
-            # This endpoint should update or fetch the latest calendar events.
-            response = requests.get(API_BASE_URL, params=params)
-            events = response.json()['processed_events']
-            logging.info(events)
-            logging.debug(f"Calendar Module Response: {response.status_code} - {response.text}")
+            calendar_response = requests.get(API_BASE_URL, params=params)
+            logging.debug(f"Calendar Module Response: {calendar_response.status_code} - {calendar_response.text}")
+            raw_events = calendar_response.json()
 
+            mapping_response = requests.get(MAPPING_API_URL, params=params)
+            logging.debug(f"Mapping Module Response: {mapping_response.status_code} - {mapping_response.text}")
+            processed_events = mapping_response.json()
 
+            # Merge raw event date info into processed events by matching IDs
+            # (This assumes that raw_events contains an "items" list and that each event's "id" matches the processed events' "id")
+            raw_items = {event['id']: event for event in raw_events.get('items', [])}
+            merged_events = []
+            for processed in processed_events:
+                raw = raw_items.get(processed['id'], {})
+                # Add start/end if available
+                processed['start'] = raw.get('start')
+                processed['end'] = raw.get('end')
+                merged_events.append(processed)
 
-            if response.status_code == 200:
-                # Next, query the mapping module for matched events that were saved in Redis.
-                map_response = requests.get(MAPPING_API_URL, params=params)
-                # logging.debug(f"Mapping Module Response: {map_response.status_code} - {map_response.text}")
-                #
-                # if map_response.status_code == 200:
-                #     events = map_response.json()  # List of processed matched events.
-                #     logging.debug(f"Parsed events: {events}")
-                return render_template('events.html', events=events)
-                # else:
-                #     return f"Error fetching matched events: {map_response.text}", map_response.status_code
-
-            else:
-                return f"Error updating calendar events: {events.text}", events.status_code
-
+            logging.debug(f"Merged events: {merged_events}")
+            return render_template('events.html', events=merged_events)
         except Exception as error:
             logging.error(f"Submission Error: {error}")
             return "Submission Failed", 500

@@ -61,7 +61,6 @@ def filter_disasters_for_event(event, disasters):
                 event_lng = geometry.get("coordinates")[0]
                 distance = haversine(coords["lat"], coords["lng"], event_lat, event_lng)
                 logging.debug(f"Distance from event to disaster {disaster.get('id')}: {distance:.2f} km")
-                # Change this threshold as required (currently set to 50000 km)
                 if distance <= 50000:
                     return True
             return False
@@ -94,6 +93,7 @@ def haversine(lat1, lon1, lat2, lon2):
 
 def process_events(events, date_from, date_to):
     logging.info(f"Processing {len(events)} events.")
+    # Fetch disasters once for all events
     disasters = fetch_disasters_bulk(date_from, date_to)
     return from_iterable(events) \
         .pipe(
