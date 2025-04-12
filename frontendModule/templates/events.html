@@ -1,27 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Parsed Calendar Events</title>
+    <meta charset="UTF-8">
+    <title>Calendar Events - Disaster Tracker</title>
+    <style>
+        /* Your existing styles... */
+        *, *::before, *::after { box-sizing: border-box; }
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5; }
+        header { width: 100%; background-color: #fff; padding: 15px 30px; display: flex; align-items: center; border-bottom: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: fixed; top: 0; left: 0; }
+        header img { height: 40px; margin-right: 20px; }
+        header h2 { margin: 0; font-size: 24px; color: #333; }
+        main { margin-top: 80px; padding: 20px; }
+        .container { background: #fff; max-width: 800px; margin: 20px auto; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; margin-bottom: 20px; }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 20px; padding-bottom: 10px; }
+        li hr { border: 0; border-top: 1px solid #e0e0e0; margin-top: 10px; }
+        .warning { font-size: 16px; font-weight: bold; color: #d9534f; }
+        .disasters-list { margin-top: 10px; padding-left: 20px; }
+        a.button { display: inline-block; background-color: #4285F4; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-top: 20px; }
+        a.button:hover { background-color: #357AE8; }
+    </style>
 </head>
 <body>
-    <h1>Parsed Calendar Events</h1>
-
-    {% if events %}
-        <ul>
-            {% for event in events %}
-                <li>
-                    <strong>{{ event.summary }}</strong><br>
-                    Location: {{ event.location }}<br>
-                    Start: {{ event.start.dateTime }}<br>
-                    End: {{ event.end.dateTime }}
-                </li>
-                <hr>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No events found.</p>
-    {% endif %}
-
-    <a href="/calendar">Back</a>
+    <header>
+        <img src="logo.png" alt="Ukrainian Catholic University Logo">
+        <h2>Disaster Tracker</h2>
+    </header>
+    <main>
+        <div class="container">
+            <h1>Parsed Calendar Events</h1>
+            {% if events %}
+                <ul>
+                    {% for event in events %}
+                        <li>
+                            <strong>{{ event.summary }}</strong><br>
+                            Location: {{ event.location }}<br>
+                            Start: {{ event.start.dateTime }}<br>
+                            End: {{ event.end.dateTime }}<br>
+                            {% if event.matched_disasters and event.matched_disasters|length > 0 %}
+                                <p class="warning">Warning: This event location might be unsafe!</p>
+                                <ul class="disasters-list">
+                                    {% for disaster in event.matched_disasters %}
+                                        <li>{{ disaster.title }} – Coordinates: {{ disaster.geometry[0].coordinates }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p>No disasters found near this event.</p>
+                            {% endif %}
+                            <hr>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No events found.</p>
+            {% endif %}
+            <a class="button" href="/calendar">Back</a>
+        </div>
+    </main>
 </body>
 </html>

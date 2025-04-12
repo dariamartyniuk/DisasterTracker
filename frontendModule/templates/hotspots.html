@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Hotspots - Disaster Tracker{% endblock %}
+
+{% block content %}
+<style>
+    .hotspots-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
+    .hotspot-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 20px;
+        transition: transform 0.2s;
+    }
+    .hotspot-card:hover {
+        transform: translateY(-5px);
+    }
+    .hotspot-title {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #333;
+    }
+    .hotspot-coordinates {
+        color: #666;
+        font-size: 0.9em;
+        margin-bottom: 15px;
+    }
+    .disaster-list {
+        list-style: none;
+        padding: 0;
+    }
+    .disaster-item {
+        border-left: 3px solid #4285F4;
+        padding: 10px;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+    }
+    .disaster-title {
+        font-weight: bold;
+        color: #4285F4;
+    }
+    .disaster-type {
+        color: #666;
+        font-size: 0.9em;
+    }
+    .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-size: 1.2em;
+    }
+</style>
+
+<h1>Disaster Hotspots</h1>
+
+{% if hotspots %}
+    <div class="hotspots-container">
+        {% for hotspot in hotspots %}
+            <div class="hotspot-card">
+                <div class="hotspot-title">Hotspot #{{ loop.index }}</div>
+                <div class="hotspot-coordinates">
+                    Coordinates: ({{ hotspot.coordinates[0] }}, {{ hotspot.coordinates[1] }})
+                </div>
+                <div class="disaster-count">
+                    Number of disasters: {{ hotspot.count }}
+                </div>
+                <ul class="disaster-list">
+                    {% for disaster in hotspot.disasters %}
+                        <li class="disaster-item">
+                            <div class="disaster-title">{{ disaster.title }}</div>
+                            <div class="disaster-type">
+                                Type: {{ disaster.categories[0].title if disaster.categories else 'Unknown' }}
+                            </div>
+                            {% if disaster.description %}
+                                <div class="disaster-description">{{ disaster.description }}</div>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="no-data">
+        No disaster hotspots found in the current time range.
+    </div>
+{% endif %}
+{% endblock %}

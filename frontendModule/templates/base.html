@@ -1,0 +1,105 @@
+          <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Disaster Tracker{% endblock %}</title>
+  <style>
+    /* Global Reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: #333;
+      min-height: 100vh;
+    }
+
+    /* Header Styling */
+    header {
+      width: 100%;
+      background-color: #ffffffcc; /* Semi-transparent white */
+      padding: 15px 30px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #e0e0e0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+    }
+
+    header img {
+      height: 40px;
+      margin-right: 20px;
+    }
+
+    header h2 {
+      font-size: 24px;
+      color: #333;
+    }
+
+    /* Navigation Styling */
+    nav {
+      margin-left: auto;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      align-items: center;
+    }
+
+    nav li {
+      margin-left: 20px;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: #4285F4;
+      font-size: 16px;
+      transition: color 0.3s ease;
+    }
+
+    nav a:hover {
+      color: #357AE8;
+    }
+
+    /* Main Content Styling */
+    main {
+      padding: 20px;
+      margin-top: 80px; /* Extra margin for header */
+    }
+
+    .container {
+      background: #fff;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Disaster Tracker</h2>
+    <nav>
+      <ul>
+        <li><a href="/calendar">Calendar</a></li>
+        <li><a href="/hotspots">Hotspots</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main>
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</body>
+</html>
