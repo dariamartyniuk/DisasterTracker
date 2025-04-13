@@ -1,6 +1,8 @@
 import datetime
 import logging
 import sys
+from functools import reduce
+
 import requests
 import redis
 from flask import Flask, render_template, request, redirect, url_for, jsonify
@@ -76,9 +78,9 @@ def calendar_form():
 
     return render_template('calendar_form.html')
 
-def group_disasters_by_zone(disasters, precision=6):
+def group_disasters_by_zone(disasters, precision=1):
     """
-    Group disasters by geographical zone by rounding the coordinates to a given precision.
+    Groups disasters by geographical zone by rounding their coordinates to a given precision.
     Returns a sorted list of groups (hotspots) in descending order of event count.
     """
     def round_key(disaster):
@@ -90,20 +92,22 @@ def group_disasters_by_zone(disasters, precision=6):
             logging.error(f"Error obtaining rounded key for disaster {disaster.get('id')}: {e}")
             return None
 
-    def add_to_group(groups, disaster):
+    def add_to_group(accumulator, disaster):
         key = round_key(disaster)
         if key is None:
-            return groups
-        if key not in groups:
-            groups[key] = {"coordinates": key, "count": 0, "disasters": []}
-        groups[key]["count"] += 1
-        groups[key]["disasters"].append(disaster)
-        return groups
+            return accumulator
+        group = accumulator.get(key, {"coordinates": key, "count": 0, "disasters": []})
+        new_group = {
+            "coordinates": key,
+            "count": group["count"] + 1,
+            "disasters": group["disasters"] + [disaster]
+        }
+        new_accumulator = {**accumulator, key: new_group}
+        return new_accumulator
 
-    groups = {}
-    for disaster in disasters:
-        groups = add_to_group(groups, disaster)
-    return sorted(groups.values(), key=lambda x: x["count"], reverse=True)
+    grouped = reduce(add_to_group, disasters, {})
+    sorted_groups = sorted(grouped.values(), key=lambda x: x["count"], reverse=True)
+    return sorted_groups
 
 @app.route('/hotspots')
 def hotspots():
@@ -125,8 +129,8 @@ def update_hotspots_data():
     Returns the fetched disasters.
     """
     today = datetime.datetime.utcnow().date()
-    date_from = (today - datetime.timedelta(days=10)).isoformat()
-    date_to = (today + datetime.timedelta(days=10)).isoformat()
+    date_from = (today - datetime.timedelta(days=40)).isoformat()
+    date_to = (today + datetime.timedelta(days=40)).isoformat()
     disasters = fetch_disasters_bulk(date_from, date_to)
     store_disasters_in_redis(disasters)
     return disasters
