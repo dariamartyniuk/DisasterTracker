@@ -26,7 +26,7 @@ class Config:
     MAPPING_API_URL = "http://localhost:5003/processed-events"
     
     # Distance threshold for matching disasters to events (in kilometers)
-    DISTANCE = 5000
+    DISTANCE = 500
 
     # Service URLs
     CALENDAR_SERVICE_URL = f"http://localhost:{CALENDAR_SERVICE_PORT}"

@@ -190,7 +190,6 @@ def consume_and_match_events():
 
             # Uncomment the following line if you wish to store the matched events in Redis
             store_matched_events_in_redis(matched_results)
-            update_hotspots_data(matched_results)
         except Exception as e:
             logging.error(f"Error processing RabbitMQ message: {e}")
 
