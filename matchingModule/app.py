@@ -3,7 +3,10 @@ import json
 import logging
 from flask import Flask, request, jsonify
 import redis
-from matching import process_events, calculate_date_range
+
+from config import Config
+from matching import process_events, calculate_date_range, fetch_disasters_bulk
+from datetime import datetime, timedelta
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -116,4 +119,4 @@ def get_processed_events():
         return jsonify({"message": "Error fetching processed events"}), 500
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5003, debug=True)
+    app.run(host='0.0.0.0', port=Config.MATCHING_SERVICE_PORT, debug=True)

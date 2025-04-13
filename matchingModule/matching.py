@@ -1,17 +1,22 @@
-import json
-import logging
-import requests
 import math
+
+import requests
+import logging
 from datetime import datetime, timedelta
+import redis
+import json
 from rx import from_iterable, operators as op
 from dotenv import load_dotenv
 from calendarModule.utils import establish_rabbitmq_connection, setup_rabbitmq
-import redis  # Added here to log when storing matched events
+from flask import request, jsonify
+from typing import List, Dict, Any, Optional, Tuple
+
+from config import Config
 
 # Set up logging configuration
 logging.basicConfig(
     level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
 load_dotenv()
@@ -61,7 +66,7 @@ def filter_disasters_for_event(event, disasters):
                 event_lng = geometry.get("coordinates")[0]
                 distance = haversine(coords["lat"], coords["lng"], event_lat, event_lng)
                 logging.debug(f"Distance from event to disaster {disaster.get('id')}: {distance:.2f} km")
-                if distance <= 50000:
+                if distance <= Config.DISTANCE:
                     return True
             return False
         except Exception as e:
@@ -113,7 +118,7 @@ def process_events(events, date_from, date_to):
 
 def store_matched_events_in_redis(matched_results):
     try:
-        r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+        r = redis.Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=Config.REDIS_DB, decode_responses=True)
         r.delete("matched_events")
         logging.info("Storing matched events in Redis...")
         for event in matched_results:
@@ -124,6 +129,42 @@ def store_matched_events_in_redis(matched_results):
         logging.info(f"Stored {len(matched_results)} matched events in Redis.")
     except Exception as ex:
         logging.error(f"Error storing matched events in Redis: {ex}")
+
+def update_hotspots_data(matched_results):
+    """
+    Update the hotspots data in Redis with the latest matched events.
+    This function stores both the full event data and a simplified version for the map.
+    
+    Args:
+        matched_results (list): List of matched events with their associated disasters
+    """
+    try:
+        r = redis.Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=Config.REDIS_DB, decode_responses=True)
+        
+        # Store full event data
+        r.delete("matched_events")
+        logging.info("Storing matched events in Redis...")
+        for event in matched_results:
+            event_json = json.dumps(event, ensure_ascii=False, indent=2)
+            logging.debug(f"Storing event:\n{event_json}")
+            r.rpush("matched_events", json.dumps(event, ensure_ascii=False))
+            
+        # Store simplified version for map display
+        r.delete("hotspots")
+        for event in matched_results:
+            hotspot = {
+                "id": event["id"],
+                "location": event["location"],
+                "summary": event["summary"],
+                "disaster_count": len(event["matched_disasters"]),
+                "disaster_types": list(set(d.get("type", "Unknown") for d in event["matched_disasters"]))
+            }
+            r.rpush("hotspots", json.dumps(hotspot, ensure_ascii=False))
+            
+        logging.info(f"Successfully updated hotspots data with {len(matched_results)} events")
+    except Exception as ex:
+        logging.error(f"Error updating hotspots data in Redis: {ex}")
+        raise
 
 def consume_and_match_events():
     channel = establish_rabbitmq_connection()
@@ -154,6 +195,7 @@ def consume_and_match_events():
 
     channel.basic_consume(queue="calendar_queue", on_message_callback=callback, auto_ack=True)
     channel.start_consuming()
+
 
 if __name__ == "__main__":
     logging.info("Starting Matching Module...")

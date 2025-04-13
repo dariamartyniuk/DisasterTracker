@@ -7,6 +7,7 @@ import pika
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from dotenv import load_dotenv
+from config import Config
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -21,7 +22,7 @@ logging.basicConfig(
 # Create connection to Google Calendar and Calendar Service object
 class GoogleCalendarClient:
     def __init__(self):
-        self.SCOPES = ['https://www.googleapis.com/auth/calendar']
+        self.SCOPES = Config.GOOGLE_SCOPES
         self.creds = None
 
     # Login to calendar
@@ -38,8 +39,8 @@ class GoogleCalendarClient:
 # Create connection to RabbitMQ
 def establish_rabbitmq_connection():
     load_dotenv()
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.getenv("RABBITMQ_HOST"),
-                                                                   port=os.getenv("RABBITMQ_PORT")))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=Config.RABBITMQ_HOST,
+                                                                   port=Config.RABBITMQ_PORT))
     return connection.channel()
 
 def setup_rabbitmq(channel, exchange, queue_name, routing_key):
