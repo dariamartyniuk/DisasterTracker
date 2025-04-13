@@ -108,9 +108,9 @@ def process_events(events, date_from, date_to):
             }),
             op.filter(lambda event: len(event["matched_disasters"]) > 0),
             op.map(lambda event: {
-                "id": event["id"],
-                "location": event["location"],
-                "summary": event["summary"],
+                "id": event.get("id", "unknown"),
+                "location": event.get("location", event.get("coordinates", {})),
+                "summary": event.get("summary", ""),
                 "matched_disasters": event["matched_disasters"]
             }),
             op.to_list()
