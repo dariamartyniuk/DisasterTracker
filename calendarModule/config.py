@@ -10,7 +10,7 @@ class Config:
     GOOGLE_REDIRECT_URI = "http://localhost:5001/callback"
     GOOGLE_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
     GEOCODING_API_URL="https://maps.googleapis.com/maps/api/geocode/json"
-    GEOCODING_API_KEY = 'AIzaSyCH62GAwaUuxFUqA1RgeS20IfRhU1eOu20'
+    GEOCODING_API_KEY = os.getenv("GEOCODING_API_KEY")
     
     # RabbitMQ configuration
     RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
