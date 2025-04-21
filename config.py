@@ -11,9 +11,9 @@ class Config:
     """
 
     # Redis configuration
-    REDIS_HOST = 'localhost'
-    REDIS_PORT = 6379
-    REDIS_DB = 0
+    REDIS_HOST = os.getenv("REDIS_HOST")
+    REDIS_PORT = os.getenv("REDIS_PORT")
+    REDIS_DB = os.getenv("REDIS_DB")
     
     # Service ports
     FRONTEND_SERVICE_PORT = 5002
@@ -22,21 +22,22 @@ class Config:
 
     # API URLs
     EONET_EVENTS_API_URL = "https://eonet.gsfc.nasa.gov/api/v3/events"
-    CALENDAR_API_BASE_URL = f"http://localhost:{CALENDAR_SERVICE_PORT}"
-    MAPPING_API_URL = "http://localhost:5003/processed-events"
+    CALENDAR_API_LOCALHOST_URL = f'http://localhost:{CALENDAR_SERVICE_PORT}'
+    CALENDAR_API_BASE_URL = f'{os.getenv("CALENDAR_SERVICE_HOST")}:{CALENDAR_SERVICE_PORT}'
+    MAPPING_API_URL = f'{os.getenv("MAPPING_SERVICE_HOST")}:5003/processed-events'
     
     # Distance threshold for matching disasters to events (in kilometers)
     DISTANCE = 500
 
     # Service URLs
-    CALENDAR_SERVICE_URL = f"http://localhost:{CALENDAR_SERVICE_PORT}"
-    MAPPING_SERVICE_URL = f"http://localhost:{MATCHING_SERVICE_PORT}"
-    FRONTEND_SERVICE_URL = f"http://localhost:{FRONTEND_SERVICE_PORT}"
+    CALENDAR_SERVICE_URL = f'{os.getenv("CALENDAR_SERVICE_HOST")}:{CALENDAR_SERVICE_PORT}'
+    MAPPING_SERVICE_URL = f'{os.getenv("MAPPING_SERVICE_HOST")}:{MATCHING_SERVICE_PORT}'
+    FRONTEND_SERVICE_URL = f'{os.getenv("FRONTEND_SERVICE_HOST")}:{FRONTEND_SERVICE_PORT}'
 
     # Google OAuth
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-    GOOGLE_REDIRECT_URI = f"{CALENDAR_SERVICE_URL}/callback"
+    GOOGLE_REDIRECT_URI = f'{CALENDAR_SERVICE_URL}/callback'
     GOOGLE_SCOPES = ['https://www.googleapis.com/auth/calendar']
 
     # RabbitMQ

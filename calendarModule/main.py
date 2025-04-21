@@ -21,7 +21,6 @@ logging.basicConfig(
     ]
 )
 
-load_dotenv()
 app = Flask(__name__)
 gc_client = GoogleCalendarClient()
 

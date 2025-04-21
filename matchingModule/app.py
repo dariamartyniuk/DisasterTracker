@@ -21,7 +21,7 @@ def clear_processed_events():
     Note: We are not flushing the entire DB so the raw events remain intact.
     """
     try:
-        r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+        r = redis.Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=0, decode_responses=True)
         r.delete("matched_events")
         logging.info("Redis: Processed events (matched_events) key cleared.")
     except Exception as e:
@@ -33,7 +33,7 @@ def get_raw_events():
     These events are expected to be stored as JSON strings.
     """
     try:
-        r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+        r = redis.Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=0, decode_responses=True)
         raw_data = r.lrange("raw_events", 0, -1)
         events = [json.loads(item) for item in raw_data]
         # Log a summary of raw events (make sure the "start" field is still present)
@@ -53,7 +53,7 @@ def store_processed_events(processed_events):
     Previous data under that key is removed.
     """
     try:
-        r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+        r = redis.Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=0, decode_responses=True)
         r.delete("matched_events")
         logging.info("Cleared 'matched_events' key in Redis.")
         for event in processed_events:
@@ -109,7 +109,7 @@ def get_processed_events():
     Other modules (e.g., UI) may call this endpoint to retrieve processed event data.
     """
     try:
-        r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+        r = redis.Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=0, decode_responses=True)
         events_data = r.lrange("matched_events", 0, -1)
         processed_events = [json.loads(item) for item in events_data]
         logging.debug("Processed events retrieved from Redis: " + str(processed_events))
