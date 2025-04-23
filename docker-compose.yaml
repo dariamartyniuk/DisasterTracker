@@ -1,0 +1,97 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"  # RabbitMQ messaging port
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  calendar:
+    build:
+      context: .
+    image: lidiyahanicheva/disastertracker/calendar:latest
+    container_name: calendar
+    command: python calendarModule/main.py
+    restart: always
+    depends_on:
+      - rabbitmq  # Ensures RabbitMQ starts first
+    ports:
+      - "5001:5001"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASSWORD}
+      FRONTEND_SERVICE_URL: http://frontend:5002
+      CALENDAR_SERVICE_HOST: http://calendar
+      MAPPING_SERVICE_HOST: http://mapping
+      FRONTEND_SERVICE_HOST: http://frontend
+
+
+  mapping:
+    build:
+      context: .
+    container_name: mapping
+    command: python matchingModule/app.py
+    restart: always
+    ports:
+      - "5003:5003"
+    depends_on:
+      - rabbitmq
+      - redis
+    environment:
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASSWORD}
+      CALENDAR_SERVICE_HOST: http://calendar
+      MAPPING_SERVICE_HOST: http://mapping
+      FRONTEND_SERVICE_HOST: http://frontend
+
+  matching:
+    build:
+      context: .
+    container_name: matching
+    command: python matchingModule/matching.py
+    restart: always
+    depends_on:
+      - calendar
+      - mapping
+      - rabbitmq
+    environment:
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASSWORD}
+      CALENDAR_SERVICE_HOST: http://calendar
+      MAPPING_SERVICE_HOST: http://mapping
+      FRONTEND_SERVICE_HOST: http://frontend
+
+  frontend:
+    build:
+      context: .
+    container_name: frontend
+    command: python frontendModule/app.py
+    restart: always
+    depends_on:
+      - matching
+    ports:
+      - "5002:5002"
+    environment:
+      CALENDAR_SERVICE_HOST: http://calendar
+      MAPPING_SERVICE_HOST: http://mapping
+      FRONTEND_SERVICE_HOST: http://frontend
+
+
+
+

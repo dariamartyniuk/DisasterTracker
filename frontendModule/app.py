@@ -26,7 +26,7 @@ def index():
 def authorize():
     try:
         # Redirect to the calendar module's Google Calendar authorization if needed.
-        return redirect(f"{Config.CALENDAR_API_BASE_URL}/login")
+        return redirect(f"{Config.CALENDAR_API_LOCALHOST_URL}/login")
     except Exception as error:
         logging.error(f"Authorization Error: {error}")
         return "Authorization Failed", 500

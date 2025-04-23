@@ -1,0 +1,44 @@
+@startuml
+
+[Calendar API] as ca
+[Disaster API] as da
+
+
+package "Disaster Parser" {
+    [Matching Module] as mm
+    node "Disaster \nEvents Parser" {
+        [Parse \nDisaster Events] as pde
+        [Validate] as vdde
+        [Process] as prd
+            pde --> vdde
+            vdde --> prd
+            prd --> mm
+    }
+    node "Calendar Parser" {
+        [Parse \nCalendar \nEvents] as pce
+        [Validate] as vde
+        [Translate \ncoordinates] as tce
+            pce --> vde
+            vde --> tce
+            tce --> mm
+    }
+  database "Matching" as mdb
+  database "Disaster" as ddb
+  database "Events" as edb
+  [Frontend] as f
+
+  ca --> pce
+  tce --> edb
+  da --> pde
+  prd --> ddb
+  mm --> mdb
+  mm --> f
+
+
+}
+
+prd --> [External consumer]:web socket
+f --> [User]
+[User] --> f
+
+@enduml

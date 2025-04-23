@@ -1,0 +1,35 @@
+@startuml dataflow
+actor User
+participant "Front-end" as FrontEnd
+participant "Calendar Module" as CalendarModule
+queue "Calendar queue" as CalendarQueue
+participant "Matching Module" as MatchingModule
+database "Events Database (Redis)" as EventsDB
+database "Disaster Database (Redis)" as DisasterDB
+participant "Disaster Module" as DisasterModule
+participant "Calendar API" as CalendarAPI
+participant "DisasterAPI" as DisasterAPI
+
+
+User -> CalendarModule : Login with Google
+CalendarModule -> CalendarAPI : Authorization
+CalendarAPI -> CalendarModule : Returns permission to use calenar
+
+CalendarModule -> CalendarAPI : Request for events (REST)
+CalendarAPI -> CalendarModule : Return events
+CalendarModule -> CalendarQueue : Publish events
+
+CalendarQueue <- MatchingModule : Consume events
+MatchingModule -> EventsDB : Write events
+MatchingModule -> DisasterModule : Send dates range of events (REST)
+DisasterModule -> DisasterAPI : Request for disasters on dates range (REST)
+DisasterAPI -> DisasterModule : Response with disaster data on dates range
+DisasterModule -> DisasterDB : Save Disaster Data
+DisasterModule -> DisasterDB : Update Disaster Data
+DisasterDB -> MatchingModule : Consume disaster data
+MatchingModule -> EventsDB : Read events data
+MatchingModule -> MatchingModule : Match events and disasters
+MatchingModule -> EventsDB: Save processed events
+MatchingModule -> FrontEnd : Send processed events
+
+@enduml
